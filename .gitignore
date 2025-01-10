@@ -33,3 +33,8 @@
 
 # OURS
 external/
+
+*.ilk
+*.pdb
+
+config.cfg

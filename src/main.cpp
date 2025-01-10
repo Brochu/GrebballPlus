@@ -1,7 +1,8 @@
 #include <stdio.h>
-#include <string>
+#include <string.h>
 
 /*
+//TODO: Look into moving this to it's own object file to avoid re-compiles
 #include <curl/curl.h>
 static size_t write_res(void *contents, size_t size, size_t len, void *user_ptr) {
     ((std::string*)user_ptr)->append((char*)contents, size*len);
@@ -27,6 +28,7 @@ void test_curl() {
     curl_easy_cleanup(ez);
 }
 
+//TODO: Look into moving this to it's own object file to avoid re-compiles
 #include <dpp/dpp.h>
 void test_dpp() {
     std::string token = "ASDF";
@@ -34,15 +36,38 @@ void test_dpp() {
 }
 */
 
-void log_message(const char *mess) {
-    static std::string app_name = "Grebball++";
-    printf("[%s] %s\n", app_name.c_str(), mess);
+#define GPP_LOG(fmt, ...) printf("[%s] " fmt "\n", "Grebball++", __VA_ARGS__);
+
+typedef struct {
+    char bot_token[256];
+} gpp_config;
+
+gpp_config load_config() {
+    char buf[1024];
+    FILE *f = NULL;
+
+    fopen_s(&f, "./config.cfg", "r");
+    fread_s(buf, 1024, 1, 1024, f);
+    fclose(f);
+
+    // Maybe split by lines later?
+    char *start = buf, *end = buf;
+    while(*start != '=') ++start;
+    end = ++start;
+    while(*end != '\n') ++end;
+
+    gpp_config conf;
+    strncpy_s(conf.bot_token, start, end-start);
+    return  conf;
 }
 
 int main(void) {
-    log_message("Starting...");
-    log_message("Ending...");
+    GPP_LOG("Starting...");
+    auto conf = load_config();
+    GPP_LOG("Using token -> '%s'", conf.bot_token);
+    GPP_LOG("Ending...");
 
+    // Work on simple config loading
     return 0;
 }
 
