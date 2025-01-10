@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define GPP_LOG(fmt, ...) printf("[%s] " fmt "\n", "Grebball++", __VA_ARGS__);
+
 /*
-//TODO: Look into moving this to it's own object file to avoid re-compiles
 #include <curl/curl.h>
 static size_t write_res(void *contents, size_t size, size_t len, void *user_ptr) {
     ((std::string*)user_ptr)->append((char*)contents, size*len);
@@ -28,15 +29,18 @@ void test_curl() {
     curl_easy_cleanup(ez);
 }
 
-//TODO: Look into moving this to it's own object file to avoid re-compiles
 #include <dpp/dpp.h>
-void test_dpp() {
-    std::string token = "ASDF";
+void test_dpp(char *token) {
     dpp::cluster bot(token);
+
+    bot.on_log(dpp::utility::cout_logger());
+    bot.on_ready([&bot](const dpp::ready_t& event) {
+        GPP_LOG("Got %s event from %s", event.raw_event.c_str(), bot.me.id.str().c_str());
+    });
+
+    bot.start(dpp::st_wait);
 }
 */
-
-#define GPP_LOG(fmt, ...) printf("[%s] " fmt "\n", "Grebball++", __VA_ARGS__);
 
 typedef struct {
     char bot_token[256];
@@ -63,11 +67,13 @@ gpp_config load_config() {
 
 int main(void) {
     GPP_LOG("Starting...");
+
     auto conf = load_config();
     GPP_LOG("Using token -> '%s'", conf.bot_token);
-    GPP_LOG("Ending...");
 
-    // Work on simple config loading
+    //test_dpp(conf.bot_token);
+
+    GPP_LOG("Ending...");
     return 0;
 }
 
