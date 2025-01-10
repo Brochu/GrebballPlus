@@ -1,0 +1,23 @@
+# Compiler flags for the project
+
+# Specify the language standard (C99, C11, etc.)
+-std=c++20
+
+# Include directories (for any header files you're using)
+-I./include
+
+# Define any preprocessor macros
+-DBUILD_DEBUG
+
+# Additional warning flags
+-Wall
+-Wextra
+-Wpedantic
+
+# Optimization level (use -O0 for no optimization, -O2 for release builds, etc.)
+-O0
+
+# External library paths (if linking with libraries)
+-L.\libs
+
+# Other flags (if required, like architecture or platform-specific options)
