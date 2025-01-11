@@ -9,7 +9,26 @@ import "curl"
 URL_BASE :: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
 
 EspnRoot :: struct {
-    events: [dynamic]json.Value,
+    events: [dynamic]EspnEvent,
+}
+
+EspnEvent :: struct {
+    id: int,
+    competitions: [dynamic]EspnCompetition,
+}
+
+EspnCompetition :: struct {
+    date: string,
+    competitors: [dynamic]EspnCompetitior,
+}
+
+EspnCompetitior :: struct {
+    team: EspnTeam,
+    score: string,
+}
+
+EspnTeam :: struct {
+    displayName: string,
 }
 
 write_func :: proc(contents: rawptr, size, len: c.size_t, user_ptr: rawptr) -> c.size_t {
@@ -30,9 +49,9 @@ main :: proc() {
     url_builder: strings.Builder;
     strings.builder_init_len_cap(&url_builder, 0, 128);
     defer strings.builder_destroy(&url_builder);
-    season := 2024;
+    season := 2023;
     type := 3;
-    week := 1;
+    week := 5;
     fmt.sbprintf(&url_builder, "%v?dates=%v&seasontype=%v&week=%v", URL_BASE, season, type, week);
     fmt.printfln("[Grebball++] URL: %v", strings.to_string(url_builder));
 
@@ -46,22 +65,24 @@ main :: proc() {
 
     code: curl.CURLcode = curl.easy_perform(h);
     fmt.printfln("[Grebball++] request code: %v", code);
-    data, _ := json.parse(response.buf[:]);
-    defer json.destroy_value(data);
+    out: EspnRoot;
+    err := json.unmarshal(response.buf[:], &out, json.DEFAULT_SPECIFICATION, context.temp_allocator);
+    fmt.printfln("[Grebball++] first event: %v", out.events[0]);
 
-    evts := data.(json.Object)["events"].(json.Array);
-    for e in evts {
-        comp := e.(json.Object)["competitions"].(json.Array)[0].(json.Object)["competitors"].(json.Array);
-        away := comp[0];
-        home := comp[1];
-        fmt.printfln("    %v vs. %v",
-            away.(json.Object)["team"].(json.Object)["abbreviation"],
-            home.(json.Object)["team"].(json.Object)["abbreviation"],
-        );
-    }
+    //evts := data.(json.Object)["events"].(json.Array);
+    //for e in evts {
+    //    comp := e.(json.Object)["competitions"].(json.Array)[0].(json.Object)["competitors"].(json.Array);
+    //    away := comp[0];
+    //    home := comp[1];
+    //    fmt.printfln("    %v vs. %v",
+    //        away.(json.Object)["team"].(json.Object)["abbreviation"],
+    //        home.(json.Object)["team"].(json.Object)["abbreviation"],
+    //    );
+    //}
 
     curl.easy_cleanup(h);
     fmt.printfln("[Grebball++] easy handle: %p", h);
 
     fmt.printfln("[Grebball++] Done");
+    free_all(context.temp_allocator);
 }
