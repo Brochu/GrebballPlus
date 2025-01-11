@@ -1,13 +1,25 @@
 package curl
 
 import "core:c"
-foreign import msvcrt "system:msvcrt"
-foreign import curl "libcurl_a.lib"
+foreign import curl "libcurl.lib"
 
-foreign curl {
-    curl_version :: proc() -> cstring ---
+Handle :: struct{};
+CURLcode :: enum {
+    OK,
+};
+
+CURLoption :: enum {
+    CURLOPT_WRITEDATA = 10001,
+    CURLOPT_URL = 10002,
+
+    CURLOPT_WRITEFUNCTION = 20011,
 }
 
-test :: proc(a, b: int) -> int {
-    return a + b;
+@(link_prefix = "curl_")
+foreign curl {
+    version :: proc() -> cstring ---
+    easy_init :: proc() -> ^Handle ---
+    easy_cleanup :: proc(h: ^Handle) ---
+    easy_setopt :: proc(^Handle, CURLoption, #c_vararg ..any) ---
+    easy_perform :: proc(h: ^Handle) -> CURLcode ---
 }
