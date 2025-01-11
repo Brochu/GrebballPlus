@@ -1,9 +1,9 @@
 #include <stdio.h>
+#include <string>
 #include <string.h>
 
 #define GPP_LOG(fmt, ...) printf("[%s] " fmt "\n", "Grebball++", __VA_ARGS__);
 
-/*
 #include <curl/curl.h>
 static size_t write_res(void *contents, size_t size, size_t len, void *user_ptr) {
     ((std::string*)user_ptr)->append((char*)contents, size*len);
@@ -11,6 +11,8 @@ static size_t write_res(void *contents, size_t size, size_t len, void *user_ptr)
 };
 
 void test_curl() {
+    char * ver = curl_version();
+    printf("[Grebball++] curl version = %s\n", ver);
     char url[512];
     sprintf(url, "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=%i&seasontype=%i&week=%i", 2024, 3, 1);
     printf("[Grebball++] url = %s\n", url);
@@ -29,6 +31,7 @@ void test_curl() {
     curl_easy_cleanup(ez);
 }
 
+/*
 #include <dpp/dpp.h>
 void test_dpp(char *token) {
     dpp::cluster bot(token);
@@ -71,6 +74,7 @@ int main(void) {
     auto conf = load_config();
     GPP_LOG("Using token -> '%s'", conf.bot_token);
 
+    test_curl();
     //test_dpp(conf.bot_token);
 
     GPP_LOG("Ending...");

@@ -8,10 +8,10 @@ for %%A in (%*) do (
     )
 )
 
-cl.exe -nologo -std:c++20 %debug% -EHsc -Od -I.\include\ ^
+cl.exe -nologo -std:c++20 -Zi -EHsc -MDd -Od -DCURL_STATICLIB -I.\include\ ^
 .\src\main.cpp ^
--link -libpath:libs\ libcurl.lib dpp.lib ^
+-link -NODEFAULTLIB:MSVCRT -libpath:libs\ ^
+advapi32.lib crypt32.lib normaliz.lib ws2_32.lib wldap32.lib libcurl_a.lib ^
 -out:Grebball++.exe
-
 
 del main.obj
