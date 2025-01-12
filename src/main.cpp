@@ -1,3 +1,4 @@
+#include "curl/websockets.h"
 #include <stdio.h>
 #include <string>
 #include <string.h>
@@ -29,6 +30,9 @@ void test_curl() {
     printf("[Grebball++] response -> %s\n", response.c_str());
 
     curl_easy_cleanup(ez);
+}
+
+void test_websocket() {
 }
 
 /*
@@ -75,6 +79,7 @@ int main(void) {
     GPP_LOG("Using token -> '%s'", conf.bot_token);
 
     test_curl();
+    test_websocket();
     //test_dpp(conf.bot_token);
 
     GPP_LOG("Ending...");
