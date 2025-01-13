@@ -7,6 +7,7 @@ import "core:encoding/json"
 import "curl"
 
 URL_BASE :: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
+BOT_TOKEN := strings.trim_right(#load("./token.cfg", string), "\r\n");
 
 EspnRoot :: struct {
     events: [dynamic]EspnEvent,
@@ -32,6 +33,8 @@ EspnTeam :: struct {
 }
 
 main :: proc() {
+    fmt.printfln("[Grebball++] Using token: '%v'", BOT_TOKEN);
+
     ver := curl.version();
     fmt.printfln("[Grebball++] curl version: %v", ver);
 
@@ -43,7 +46,7 @@ main :: proc() {
     defer strings.builder_destroy(&url_builder);
     season := 2024;
     type := 2;
-    week := 1;
+    week := 18;
     fmt.sbprintf(&url_builder, "%v?dates=%v&seasontype=%v&week=%v", URL_BASE, season, type, week);
     fmt.printfln("[Grebball++] URL: %v", strings.to_string(url_builder));
 
@@ -75,8 +78,14 @@ main :: proc() {
         );
     }
 
+    auth: strings.Builder;
+    strings.builder_init_len_cap(&auth, 0, 1024);
+    defer strings.builder_destroy(&auth);
+    strings.write_string(&auth, "Authorization: Bot ");
+    strings.write_string(&auth, BOT_TOKEN);
+
     headers: ^curl.slist= nil;
-    headers = curl.slist_append(headers, "Authorization: Bot TOKEN_HERE");
+    headers = curl.slist_append(headers, strings.to_cstring(&auth));
     fmt.printfln("[Grebball++] slist for headers: %p", headers);
 
     curr := headers;
