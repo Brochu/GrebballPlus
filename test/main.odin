@@ -31,19 +31,11 @@ EspnTeam :: struct {
     displayName: string,
 }
 
-write_func :: proc(contents: rawptr, size, len: c.size_t, user_ptr: rawptr) -> c.size_t {
-    src := (cast(^strings.Builder)user_ptr);
-    dst := (cast([^]byte)contents);
-    strings.write_bytes(src, dst[0:len]);
-
-    return size * len;
-}
-
 main :: proc() {
     ver := curl.version();
     fmt.printfln("[Grebball++] curl version: %v", ver);
 
-    h: ^curl.Handle = curl.easy_init();
+    h: rawptr = curl.easy_init();
     fmt.printfln("[Grebball++] easy handle: %p", h);
 
     url_builder: strings.Builder;
@@ -59,6 +51,13 @@ main :: proc() {
     strings.builder_init_len_cap(&response, 0, 1024);
     defer strings.builder_destroy(&response);
 
+    write_func :: proc(contents: rawptr, size, len: c.size_t, user_ptr: rawptr) -> c.size_t {
+        src := (cast(^strings.Builder)user_ptr);
+        dst := (cast([^]byte)contents);
+        strings.write_bytes(src, dst[0:len]);
+
+        return size * len;
+    }
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, strings.to_cstring(&url_builder));
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &response);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, write_func);
@@ -80,8 +79,31 @@ main :: proc() {
     //    );
     //}
 
+    headers: ^curl.slist= nil;
+    headers = curl.slist_append(headers, "Authorization: Bot TOKEN_HERE");
+    fmt.printfln("[Grebball++] slist for headers: %p", headers);
+
+    curr := headers;
+    for (curr != nil) {
+        fmt.printfln("    - '%v'", curr.data);
+        curr = cast(^curl.slist)curr.next;
+    }
+
+    strings.builder_reset(&response);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, "https://discord.com/api/v10/gateway");
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &response);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, write_func);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
+
+    code = curl.easy_perform(h);
+    fmt.printfln("[Grebball++] request code: %v", code);
+    fmt.printfln("[Grebball++] gateway result: %v", strings.to_string(response));
+
     curl.easy_cleanup(h);
     fmt.printfln("[Grebball++] easy handle: %p", h);
+
+    curl.slist_free_all(headers);
+    fmt.printfln("[Grebball++] slist for headers: %p", headers);
 
     fmt.printfln("[Grebball++] Done");
     free_all(context.temp_allocator);
