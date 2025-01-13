@@ -41,9 +41,9 @@ main :: proc() {
     url_builder: strings.Builder;
     strings.builder_init_len_cap(&url_builder, 0, 128);
     defer strings.builder_destroy(&url_builder);
-    season := 2023;
-    type := 3;
-    week := 5;
+    season := 2024;
+    type := 2;
+    week := 1;
     fmt.sbprintf(&url_builder, "%v?dates=%v&seasontype=%v&week=%v", URL_BASE, season, type, week);
     fmt.printfln("[Grebball++] URL: %v", strings.to_string(url_builder));
 
@@ -66,18 +66,14 @@ main :: proc() {
     fmt.printfln("[Grebball++] request code: %v", code);
     out: EspnRoot;
     err := json.unmarshal(response.buf[:], &out, json.DEFAULT_SPECIFICATION, context.temp_allocator);
-    fmt.printfln("[Grebball++] first event: %v", out.events[0]);
+    fmt.println("[Grebball++] Events:");
 
-    //evts := data.(json.Object)["events"].(json.Array);
-    //for e in evts {
-    //    comp := e.(json.Object)["competitions"].(json.Array)[0].(json.Object)["competitors"].(json.Array);
-    //    away := comp[0];
-    //    home := comp[1];
-    //    fmt.printfln("    %v vs. %v",
-    //        away.(json.Object)["team"].(json.Object)["abbreviation"],
-    //        home.(json.Object)["team"].(json.Object)["abbreviation"],
-    //    );
-    //}
+    for e in out.events {
+        fmt.printfln("    [%v][%v] '%v' - %v VS, %v - '%v'", e.id, e.competitions[0].date,
+            e.competitions[0].competitors[0].team.displayName, e.competitions[0].competitors[0].score,
+            e.competitions[0].competitors[1].score, e.competitions[0].competitors[1].team.displayName
+        );
+    }
 
     headers: ^curl.slist= nil;
     headers = curl.slist_append(headers, "Authorization: Bot TOKEN_HERE");
