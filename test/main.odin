@@ -4,6 +4,9 @@ import "core:c"
 import "core:fmt"
 import "core:strings"
 import "core:encoding/json"
+import "core:time"
+import dt"core:time/datetime"
+import tz"core:time/timezone"
 import "curl"
 
 URL_BASE :: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
@@ -30,6 +33,16 @@ EspnCompetitior :: struct {
 
 EspnTeam :: struct {
     displayName: string,
+    abbreviation: string,
+}
+
+NFLMatch :: struct {
+    id: string,
+    away_team: string,
+    home_team: string,
+    away_score: int,
+    home_score: int,
+    date: dt.DateTime,
 }
 
 main :: proc() {
@@ -71,11 +84,23 @@ main :: proc() {
     err := json.unmarshal(response.buf[:], &out, json.DEFAULT_SPECIFICATION, context.temp_allocator);
     fmt.println("[Grebball++] Events:");
 
+    region, ok := tz.region_load("local");
+    defer tz.region_destroy(region);
+    fmt.printfln("    region: %v", region);
+
     for e in out.events {
-        fmt.printfln("    [%v][%v] '%v' - %v VS, %v - '%v'", e.id, e.competitions[0].date,
-            e.competitions[0].competitors[0].team.displayName, e.competitions[0].competitors[0].score,
-            e.competitions[0].competitors[1].score, e.competitions[0].competitors[1].team.displayName
+        str_date, _ := strings.replace(e.competitions[0].date, "Z", ":00Z", 1);
+        t, read := time.iso8601_to_time_utc(str_date);
+        dt, _ := time.time_to_datetime(t);
+        //dt, off, is_leap, read := time.rfc3339_to_components(e.competitions[0].date);
+        fmt.printfln("    %v", dt);
+        new_dt, success := tz.datetime_to_tz(dt, region);
+        fmt.printfln("    [%v]%v", success, new_dt);
+        fmt.printfln("    [%v][%v] '%v'(%v) - %v VS, %v - '%v'(%v)", e.id, e.competitions[0].date,
+            e.competitions[0].competitors[0].team.displayName, e.competitions[0].competitors[0].team.abbreviation, e.competitions[0].competitors[0].score,
+            e.competitions[0].competitors[1].score, e.competitions[0].competitors[1].team.displayName, e.competitions[0].competitors[1].team.abbreviation
         );
+        fmt.println();
     }
 
     auth: strings.Builder;
