@@ -95,7 +95,7 @@ main :: proc() {
     }
 
     strings.builder_reset(&response);
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, "https://discord.com/api/v10/gateway");
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, "https://discord.com/api/v10/gateway/bot");
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &response);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, write_func);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
