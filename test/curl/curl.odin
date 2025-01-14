@@ -1,7 +1,16 @@
 package curl
 
 import "core:c"
+import "core:strings"
 foreign import curl "libcurl.lib"
+
+builder_write :: proc(contents: rawptr, size, len: u64, user_ptr: rawptr) -> u64 {
+    dst := (cast(^strings.Builder)user_ptr);
+    data := (cast([^]byte)contents);
+    strings.write_bytes(dst, data[0:len]);
+
+    return size * len;
+}
 
 CURLcode :: enum {
     OK,
