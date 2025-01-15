@@ -12,7 +12,12 @@ main :: proc() {
     }
     defer fb.free();
 
-    fb.fetch_week(2023, 3, 5);
+    matches := fb.fetch_week(2024, 2, 18);
+    defer fb.delete_matches(matches);
+
+    for m in matches {
+        fmt.printfln("    - %v", m);
+    }
 }
 
 GATEWAY_URL := "https://discord.com/api/v10/gateway/bot";

@@ -3,6 +3,7 @@ package football
 import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
+import "core:strconv"
 import "core:strings"
 import dt"core:time/datetime"
 
@@ -65,7 +66,7 @@ free :: proc() {
     curl.easy_cleanup(curl_h);
 }
 
-fetch_week :: proc(season, type, week: int) -> [dynamic]NFLMatch {
+fetch_week :: proc(season, type, week: int, allocator: mem.Allocator = context.allocator) -> [dynamic]NFLMatch {
     strings.builder_reset(&url_str);
     strings.builder_reset(&response);
     fmt.sbprintf(&url_str, "%v?dates=%v&seasontype=%v&week=%v", URL_BASE, season, type, week);
@@ -81,8 +82,18 @@ fetch_week :: proc(season, type, week: int) -> [dynamic]NFLMatch {
     out: EspnRoot;
     err := json.unmarshal(response.buf[:], &out, json.DEFAULT_SPECIFICATION, context.temp_allocator);
     fmt.println("[Grebball++] Events:");
+    results := make([dynamic]NFLMatch, 0, 16);
+    arr: [32]byte;
     for e in out.events {
-        fmt.printfln("    -%v", e);
+        m: NFLMatch;
+        test := strconv.itoa(arr[:], e.id);
+        m.id, _ = strings.clone_from_bytes(arr[:len(test)], allocator);
+        m.away_team, _ = strings.clone(e.competitions[0].competitors[0].team.abbreviation, allocator);
+        m.home_team, _ = strings.clone(e.competitions[0].competitors[1].team.abbreviation, allocator);
+        m.away_score = strconv.atoi(e.competitions[0].competitors[0].score);
+        m.home_score = strconv.atoi(e.competitions[0].competitors[1].score);
+        m.date = {}; //TODO: Date parsing
+        append(&results, m);
     }
 
     //region, ok := tz.region_load("local");
@@ -105,6 +116,14 @@ fetch_week :: proc(season, type, week: int) -> [dynamic]NFLMatch {
     //}
 
     free_all(context.temp_allocator);
-    //TODO: Fill results and allocate needed memory
-    return {};
+    return results;
+}
+
+delete_matches :: proc(matches: [dynamic]NFLMatch) {
+    for m in matches {
+        delete(m.id);
+        delete(m.away_team);
+        delete(m.home_team);
+    }
+    delete(matches);
 }
