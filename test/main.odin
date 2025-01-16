@@ -8,6 +8,7 @@ import "curl"
 import fb"football"
 
 main :: proc() {
+    /*
     if err := fb.init(); err != .None {
         fmt.printfln("[Grebball++] Could not allocated resources for football requests: %v", err);
     }
@@ -25,6 +26,9 @@ main :: proc() {
             m.home_score, m.home_team
         );
     }
+    */
+
+    discord_gateway();
 }
 
 GATEWAY_URL := "https://discord.com/api/v10/gateway/bot";
@@ -61,4 +65,5 @@ discord_gateway :: proc() {
     code := curl.easy_perform(h);
     fmt.printfln("[Grebball++] request code: %v", code);
     fmt.printfln("[Grebball++] gateway result: %v", strings.to_string(sb));
+    //TODO: Next steps, negociate connection with Discord's WebSocket
 }
