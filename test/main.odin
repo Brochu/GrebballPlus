@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:strings"
+import "core:time"
 
 import "curl"
 import fb"football"
@@ -15,8 +16,14 @@ main :: proc() {
     matches := fb.fetch_week(2024, 2, 18);
     defer fb.delete_matches(matches);
 
+    buff := make([]u8, 32);
     for m in matches {
-        fmt.printfln("    - %v", m);
+        date_part := time.to_string_yyyy_mm_dd(m.start_time, buff[:]);
+        time_str := time.time_to_string_hms(m.start_time, buff[len(date_part):]);
+        fmt.printfln("[%v](%v %v) %v: %v VS. %v :%v", m.id, date_part, time_str,
+            m.away_team, m.away_score,
+            m.home_score, m.home_team
+        );
     }
 }
 

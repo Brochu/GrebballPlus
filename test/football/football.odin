@@ -5,7 +5,7 @@ import "core:fmt"
 import "core:mem"
 import "core:strconv"
 import "core:strings"
-import dt"core:time/datetime"
+import "core:time"
 
 import "../curl"
 
@@ -39,7 +39,7 @@ NFLMatch :: struct {
     home_team: string,
     away_score: int,
     home_score: int,
-    date: dt.DateTime,
+    start_time: time.Time,
 }
 
 URL_BASE :: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard";
@@ -70,50 +70,30 @@ fetch_week :: proc(season, type, week: int, allocator: mem.Allocator = context.a
     strings.builder_reset(&url_str);
     strings.builder_reset(&response);
     fmt.sbprintf(&url_str, "%v?dates=%v&seasontype=%v&week=%v", URL_BASE, season, type, week);
-    fmt.printfln("[Grebball++] URL: %v", strings.to_string(url_str));
 
     curl.easy_setopt(curl_h, curl.CURLoption.CURLOPT_URL, strings.to_cstring(&url_str));
     curl.easy_setopt(curl_h, curl.CURLoption.CURLOPT_WRITEDATA, &response);
     curl.easy_setopt(curl_h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
-
     code: curl.CURLcode = curl.easy_perform(curl_h);
-    fmt.printfln("[Grebball++] request code: %v", code);
 
     out: EspnRoot;
     err := json.unmarshal(response.buf[:], &out, json.DEFAULT_SPECIFICATION, context.temp_allocator);
-    fmt.println("[Grebball++] Events:");
-    results := make([dynamic]NFLMatch, 0, 16);
+    results := make([dynamic]NFLMatch, len(out.events), len(out.events));
     arr: [32]byte;
-    for e in out.events {
-        m: NFLMatch;
+    for e, i in out.events {
         test := strconv.itoa(arr[:], e.id);
-        m.id, _ = strings.clone_from_bytes(arr[:len(test)], allocator);
-        m.away_team, _ = strings.clone(e.competitions[0].competitors[0].team.abbreviation, allocator);
-        m.home_team, _ = strings.clone(e.competitions[0].competitors[1].team.abbreviation, allocator);
-        m.away_score = strconv.atoi(e.competitions[0].competitors[0].score);
-        m.home_score = strconv.atoi(e.competitions[0].competitors[1].score);
-        m.date = {}; //TODO: Date parsing
-        append(&results, m);
+        results[i].id, _ = strings.clone_from_bytes(arr[:len(test)], allocator);
+
+        away_comp := e.competitions[0].competitors[0];
+        home_comp := e.competitions[0].competitors[1];
+        results[i].away_team, _ = strings.clone(away_comp.team.abbreviation, allocator);
+        results[i].home_team, _ = strings.clone(home_comp.team.abbreviation, allocator);
+        results[i].away_score = strconv.atoi(away_comp.score);
+        results[i].home_score = strconv.atoi(home_comp.score);
+
+        date_str, _ := strings.replace(e.competitions[0].date, "Z", ":00Z", 1);
+        results[i].start_time, _ = time.iso8601_to_time_utc(date_str);
     }
-
-    //region, ok := tz.region_load("local");
-    //defer tz.region_destroy(region);
-    //fmt.printfln("    region: %v", region);
-
-    //for e in out.events {
-    //    str_date, _ := strings.replace(e.competitions[0].date, "Z", ":00Z", 1);
-    //    t, read := time.iso8601_to_time_utc(str_date);
-    //    dt, _ := time.time_to_datetime(t);
-    //    //dt, off, is_leap, read := time.rfc3339_to_components(e.competitions[0].date);
-    //    fmt.printfln("    %v", dt);
-    //    new_dt, success := tz.datetime_to_tz(dt, region);
-    //    fmt.printfln("    [%v]%v", success, new_dt);
-    //    fmt.printfln("    [%v][%v] '%v'(%v) - %v VS, %v - '%v'(%v)", e.id, e.competitions[0].date,
-    //        e.competitions[0].competitors[0].team.displayName, e.competitions[0].competitors[0].team.abbreviation, e.competitions[0].competitors[0].score,
-    //        e.competitions[0].competitors[1].score, e.competitions[0].competitors[1].team.displayName, e.competitions[0].competitors[1].team.abbreviation
-    //    );
-    //    fmt.println();
-    //}
 
     free_all(context.temp_allocator);
     return results;
