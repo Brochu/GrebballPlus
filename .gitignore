@@ -40,3 +40,4 @@ external/
 
 config.cfg
 test/token.cfg
+test/dev.cfg

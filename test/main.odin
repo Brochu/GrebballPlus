@@ -1,13 +1,47 @@
 package main
 
 import "core:fmt"
+import "core:mem"
 import "core:strings"
 import "core:time"
 
 import "curl"
 import fb"football"
+import cfg"config"
+
+TRACK_MEM :: #config(TRACK_MEM, false);
 
 main :: proc() {
+when TRACK_MEM {
+    track: mem.Tracking_Allocator
+    mem.tracking_allocator_init(&track, context.allocator)
+    context.allocator = mem.tracking_allocator(&track)
+
+    defer {
+        if len(track.allocation_map) > 0 {
+            fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+            for _, entry in track.allocation_map {
+                fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+            }
+        }
+        if len(track.bad_free_array) > 0 {
+            fmt.eprintf("=== %v incorrect frees: ===\n", len(track.bad_free_array))
+            for entry in track.bad_free_array {
+                fmt.eprintf("- %p @ %v\n", entry.memory, entry.location)
+            }
+        }
+        mem.tracking_allocator_destroy(&track)
+    }
+}
+
+    cfg.init();
+    defer cfg.free();
+
+    fmt.println("Config table:");
+    for k, v in cfg.Table  {
+        fmt.printfln("[%v] -> %v", k, v);
+    }
+
     /*
     if err := fb.init(); err != .None {
         fmt.printfln("[Grebball++] Could not allocated resources for football requests: %v", err);
@@ -31,16 +65,17 @@ main :: proc() {
     discord_gateway();
 }
 
-GATEWAY_URL := "https://discord.com/api/v10/gateway/bot";
-BOT_TOKEN := strings.trim_right(#load("./token.cfg", string), "\r\n");
+GATEWAY_URL := "GATEWAY_URL";
+BOT_TOKEN := "DISCORD_TOKEN"
 
 discord_gateway :: proc() {
-    fmt.printfln("[Grebball++] Using token: '%v'", BOT_TOKEN);
+    token := cfg.Table[BOT_TOKEN];
+    fmt.printfln("[Grebball++] Using token: '%v'", token);
 
     sb: strings.Builder;
     strings.builder_init_len_cap(&sb, 0, 1024);
     defer strings.builder_destroy(&sb);
-    fmt.sbprintf(&sb, "Authorization: Bot %v", BOT_TOKEN);
+    fmt.sbprintf(&sb, "Authorization: Bot %v", token);
 
     headers: ^curl.slist= nil;
     headers = curl.slist_append(headers, strings.to_cstring(&sb));
@@ -57,7 +92,7 @@ discord_gateway :: proc() {
     h := curl.easy_init();
     defer curl.easy_cleanup(h);
 
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, GATEWAY_URL);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, cfg.Table[GATEWAY_URL]);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &sb);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
