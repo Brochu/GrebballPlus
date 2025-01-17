@@ -1,5 +1,6 @@
 package main
 
+import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
 import "core:strings"
@@ -10,6 +11,18 @@ import fb"football"
 import cfg"config"
 
 TRACK_MEM :: #config(TRACK_MEM, false);
+
+gateway_res :: struct {
+    url: string,
+    session_start_limit: session_start,
+    shards: int,
+}
+session_start :: struct {
+    max_concurrency: int,
+    remaining: int,
+    reset_after: int,
+    total: int,
+}
 
 main :: proc() {
 when TRACK_MEM {
@@ -98,7 +111,17 @@ discord_gateway :: proc() {
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
 
     code := curl.easy_perform(h);
-    fmt.printfln("[Grebball++] request code: %v", code);
-    fmt.printfln("[Grebball++] gateway result: %v", strings.to_string(sb));
+    gate_res: gateway_res;
+    _ = json.unmarshal(sb.buf[:], &gate_res, json.DEFAULT_SPECIFICATION, context.temp_allocator);
+    fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
+    fmt.printfln("    url: %v", gate_res.url);
+
     //TODO: Next steps, negociate connection with Discord's WebSocket
+
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, cfg.Table[GATEWAY_URL]);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &sb);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
+
+    free_all(context.temp_allocator);
 }
