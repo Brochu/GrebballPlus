@@ -46,12 +46,11 @@ slist :: struct {
     next: rawptr,
 };
 
-//TODO: Double check parameter types here
 ws_frame :: struct {
     age: int,       /* zero */
     flags: int,     /* See the CURLWS_* defines */
-    offset: int,    /* the offset of this data into the frame */
-    bytesleft: int, /* number of pending bytes left of the payload */
+    offset: c.int64_t,    /* the offset of this data into the frame */
+    bytesleft: c.int64_t, /* number of pending bytes left of the payload */
     len: c.size_t,       /* size of the current data chunk */
 };
 
@@ -63,8 +62,6 @@ foreign curl {
     easy_setopt :: proc(h: rawptr, opt: CURLoption, #c_vararg args:..any) ---
     easy_perform :: proc(h: rawptr) -> CURLcode ---
 
-    //TODO: Double check parameter types here
-    ws_send :: proc(h, buf: rawptr, buf_len: c.size_t, sent: ^c.size_t, frag_size: c.size_t, flags: int) -> CURLcode ---
     ws_recv :: proc(h, buf: rawptr, buf_len: c.size_t, nread: ^c.size_t, metap: ^^ws_frame) -> CURLcode ---
 
     slist_append :: proc(list: rawptr, str: cstring) -> ^slist ---

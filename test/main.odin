@@ -121,10 +121,14 @@ discord_gateway :: proc() {
     fmt.printfln("[Grebball++] [CODE=%v] web socket:", code);
 
     sys.Sleep(100);
-    buf := make([]byte, 1024);
-    defer delete(buf);
+    buf := make([]u8, 1024, context.temp_allocator);
     got: c.size_t = 0;
     metap: ^curl.ws_frame;
+
+    code = curl.ws_recv(h, &buf, 1024, &got, &metap);
+    fmt.printfln("[Grebball++] [CODE=%v] ws_recv:", code);
+    fmt.printfln("    meta: %v", metap^);
+    fmt.printfln("    buf: %v", buf);
 
     //TODO: Start heartbeat timer, using time.accurate_sleep
     //sys.Sleep(heartbeat interval)
