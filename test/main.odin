@@ -26,6 +26,14 @@ session_start :: struct {
     total: int,
 }
 
+hello_evt :: struct {
+    op: int,
+    d: heartbeat_d,
+};
+heartbeat_d :: struct {
+    heartbeat_interval: int,
+};
+
 heartbeat_req :: struct {
     op: int,
     d: int,

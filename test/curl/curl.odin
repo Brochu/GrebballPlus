@@ -10,6 +10,9 @@ builder_write :: proc(contents: rawptr, size, len: u64, user_ptr: rawptr) -> u64
     data := (cast([^]byte)contents);
     strings.write_bytes(dst, data[0:len]);
 
+    //TODO: find a way to get websocket data on main thread?
+    // maybe need to swap to recv / sent model
+    // setup CURLOPT for ConnectOnly
     fmt.printfln("[CURL] %v", strings.to_string(dst^))
     return size * len;
 }
