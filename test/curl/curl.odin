@@ -1,6 +1,7 @@
 package curl
 
 import "core:c"
+import "core:fmt"
 import "core:strings"
 foreign import curl "libcurl.lib"
 
@@ -9,6 +10,7 @@ builder_write :: proc(contents: rawptr, size, len: u64, user_ptr: rawptr) -> u64
     data := (cast([^]byte)contents);
     strings.write_bytes(dst, data[0:len]);
 
+    fmt.printfln("[CURL] %v", strings.to_string(dst^))
     return size * len;
 }
 

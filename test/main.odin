@@ -4,6 +4,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
 import "core:strings"
+import "core:thread"
 import "core:time"
 
 import "curl"
@@ -22,6 +23,11 @@ session_start :: struct {
     remaining: int,
     reset_after: int,
     total: int,
+}
+
+heartbeat_req :: struct {
+    op: int,
+    d: int,
 }
 
 main :: proc() {
@@ -116,12 +122,34 @@ discord_gateway :: proc() {
     fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
     fmt.printfln("    url: %v", gate_res.url);
 
-    //TODO: Next steps, negociate connection with Discord's WebSocket
-
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, cfg.Table[GATEWAY_URL]);
+    strings.builder_reset(&sb);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, gate_res.url);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &sb);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
+
+    //code = curl.easy_perform(h);
+    fmt.printfln("[Grebball++] [CODE=%v] web socket:", code);
+    fmt.printfln("    %v", strings.to_string(sb));
+
+    //TODO: Start heartbeat timer, using time.accurate_sleep
+    //time.accurate_sleep(heartbeat interval)
+    //will probably need a mutex set on the CURL handle?
+    //1. get messages from bot, 2. send heartbeats, 3. send commands responses
+    //figure out why threads don't seems to work??
+
+    hb_proc :: proc() { 
+        for (true) {
+            fmt.println("[HB] -> need to send new HB command");
+            time.sleep(500);
+        }
+    }
+    hb_thread := thread.create_and_start(hb_proc);
+    thread.start(hb_thread);
+    defer thread.destroy(hb_thread);
+
+    thread.join(hb_thread);
+    time.sleep(3000);
 
     free_all(context.temp_allocator);
 }
