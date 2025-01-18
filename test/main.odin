@@ -70,8 +70,10 @@ when TRACK_MEM {
     for k, v in cfg.Table  {
         fmt.printfln("[%v] -> %v", k, v);
     }
+    fmt.println();
 
-    discord_gateway();
+    //discord_gateway();
+    web_socket();
 }
 
 GATEWAY_URL := "GATEWAY_URL";
@@ -111,40 +113,29 @@ discord_gateway :: proc() {
     _ = json.unmarshal(sb.buf[:], &gate_res, json.DEFAULT_SPECIFICATION, context.temp_allocator);
     fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
     fmt.printfln("    url: %v", gate_res.url);
-
-    strings.builder_reset(&sb);
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, gate_res.url);
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_CONNECT_ONLY, 2);
-
-    code = curl.easy_perform(h);
-    defer curl.easy_cleanup(h);
-    fmt.printfln("[Grebball++] [CODE=%v] web socket:", code);
-
-    sys.Sleep(100);
-    buf := make([]u8, 1024, context.temp_allocator);
-    got: c.size_t = 0;
-    metap: ^curl.ws_frame;
-
-    code = curl.ws_recv(h, &buf, 1024, &got, &metap);
-    fmt.printfln("[Grebball++] [CODE=%v] ws_recv:", code);
-    fmt.printfln("    meta: %v", metap^);
-    fmt.printfln("    buf: %v", buf);
-
-    //TODO: Start heartbeat timer, using time.accurate_sleep
-    //sys.Sleep(heartbeat interval)
-    //will probably need a mutex set on the CURL handle?
-    //1. get messages from bot / gen responses, 2. send heartbeats
-
-    //th := thread.create_and_start(proc() {
-    //    for i in 0..<10 {
-    //        fmt.printfln("[THREAD] Hello!");
-    //        sys.Sleep(100);
-    //    }
-    //});
-    //defer thread.destroy(th);
-
-    //sys.Sleep(50);
-    //thread.join(th);
-
     free_all(context.temp_allocator);
+}
+
+web_socket :: proc() {
+    ez := curl.easy_init();
+    defer curl.easy_cleanup(ez);
+    curl.easy_setopt(ez, curl.CURLoption.CURLOPT_URL, "wss://gateway.discord.gg");
+    curl.easy_setopt(ez, curl.CURLoption.CURLOPT_CONNECT_ONLY, 2);
+
+    code := curl.easy_perform(ez);
+    fmt.printfln("[Grebball++] [code=%v]", code);
+    sys.Sleep(100);
+    fmt.println("[Grebball++] ready to recv");
+
+    buf_len :: 256;
+    buffer: [buf_len]u8;
+    nread: c.size_t = 0;
+    meta: ^curl.ws_frame;
+    code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nread, &meta);
+    fmt.printfln("[Grebball++] [code=%v] recv", code);
+    fmt.printfln("    meta: %v", meta^);
+    fmt.printfln("    buf (%v): %c", len(buffer), buffer);
+
+    size := size_of(curl.ws_frame);
+    fmt.printfln("[Grebball++] sizeof ws_frame = %v", size);
 }

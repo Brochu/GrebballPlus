@@ -47,8 +47,8 @@ slist :: struct {
 };
 
 ws_frame :: struct {
-    age: int,       /* zero */
-    flags: int,     /* See the CURLWS_* defines */
+    age: c.int,       /* zero */
+    flags: c.int,     /* See the CURLWS_* defines */
     offset: c.int64_t,    /* the offset of this data into the frame */
     bytesleft: c.int64_t, /* number of pending bytes left of the payload */
     len: c.size_t,       /* size of the current data chunk */

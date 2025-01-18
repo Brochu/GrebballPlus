@@ -54,6 +54,9 @@ void test_websocket() {
 
     curl_easy_cleanup(ez);
     GPP_LOG("WebSockets: DONE");
+
+    size_t size = sizeof(curl_ws_frame);
+    GPP_LOG("sizeof ws_frame = %zu", size);
 }
 
 /*
