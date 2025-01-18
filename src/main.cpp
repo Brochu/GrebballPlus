@@ -2,9 +2,10 @@
 #include <string>
 #include <string.h>
 
-#define GPP_LOG(fmt, ...) printf("[%s] " fmt "\n", "Grebball++", __VA_ARGS__);
+#define GPP_LOG(fmt, ...) printf("[%s] " fmt "\n", "GB++", __VA_ARGS__);
 
 #include <curl/curl.h>
+#include <curl/websockets.h>
 static size_t write_res(void *contents, size_t size, size_t len, void *user_ptr) {
     ((std::string*)user_ptr)->append((char*)contents, size*len);
     return size * len;
@@ -26,12 +27,33 @@ void test_curl() {
     CURLcode code = curl_easy_perform(ez);
 
     printf("[Grebball++] CURLcode -> %i\n", code);
-    printf("[Grebball++] response -> %s\n", response.c_str());
+    //printf("[Grebball++] response -> %s\n", response.c_str());
 
     curl_easy_cleanup(ez);
 }
 
 void test_websocket() {
+    CURL *ez = curl_easy_init();
+    curl_easy_setopt(ez, CURLOPT_URL, "wss://gateway.discord.gg");
+    curl_easy_setopt(ez, CURLOPT_CONNECT_ONLY, 2L);
+    CURLcode code = curl_easy_perform(ez);
+
+    GPP_LOG("(%i) connect to WS ->", code);
+    Sleep(100);
+
+    const size_t buf_len = 1024;
+    size_t nread = 0;
+    char buffer[buf_len];
+    const curl_ws_frame *meta;
+    code = curl_ws_recv(ez, buffer, buf_len, &nread, &meta);
+    GPP_LOG("(%i) RECV ->", code);
+    GPP_LOG("(%zu) %s", nread, buffer);
+
+    code = curl_ws_send(ez, "", 0, &nread, 0, CURLWS_CLOSE);
+    GPP_LOG("(%i) SEND, close ->", code);
+
+    curl_easy_cleanup(ez);
+    GPP_LOG("WebSockets: DONE");
 }
 
 /*
