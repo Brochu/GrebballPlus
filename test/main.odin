@@ -1,5 +1,6 @@
 package main
 
+import "core:c"
 import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
@@ -105,37 +106,41 @@ discord_gateway :: proc() {
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
 
-    //code := curl.easy_perform(h);
-    //gate_res: gateway_res;
-    //_ = json.unmarshal(sb.buf[:], &gate_res, json.DEFAULT_SPECIFICATION, context.temp_allocator);
-    //fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
-    //fmt.printfln("    url: %v", gate_res.url);
+    code := curl.easy_perform(h);
+    gate_res: gateway_res;
+    _ = json.unmarshal(sb.buf[:], &gate_res, json.DEFAULT_SPECIFICATION, context.temp_allocator);
+    fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
+    fmt.printfln("    url: %v", gate_res.url);
 
-    //strings.builder_reset(&sb);
-    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, gate_res.url);
-    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &sb);
-    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
-    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
+    strings.builder_reset(&sb);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, gate_res.url);
+    curl.easy_setopt(h, curl.CURLoption.CURLOPT_CONNECT_ONLY, 2);
 
-    //code = curl.easy_perform(h);
-    //fmt.printfln("[Grebball++] [CODE=%v] web socket:", code);
-    //fmt.printfln("    %v", strings.to_string(sb));
+    code = curl.easy_perform(h);
+    defer curl.easy_cleanup(h);
+    fmt.printfln("[Grebball++] [CODE=%v] web socket:", code);
+
+    sys.Sleep(100);
+    buf := make([]byte, 1024);
+    defer delete(buf);
+    got: c.size_t = 0;
+    metap: ^curl.ws_frame;
 
     //TODO: Start heartbeat timer, using time.accurate_sleep
     //sys.Sleep(heartbeat interval)
     //will probably need a mutex set on the CURL handle?
     //1. get messages from bot / gen responses, 2. send heartbeats
 
-    th := thread.create_and_start(proc() {
-        for i in 0..<10 {
-            fmt.printfln("[THREAD] Hello!");
-            sys.Sleep(100);
-        }
-    });
-    defer thread.destroy(th);
+    //th := thread.create_and_start(proc() {
+    //    for i in 0..<10 {
+    //        fmt.printfln("[THREAD] Hello!");
+    //        sys.Sleep(100);
+    //    }
+    //});
+    //defer thread.destroy(th);
 
-    sys.Sleep(50);
-    thread.join(th);
+    //sys.Sleep(50);
+    //thread.join(th);
 
     free_all(context.temp_allocator);
 }
