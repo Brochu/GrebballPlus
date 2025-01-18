@@ -63,6 +63,7 @@ foreign curl {
     easy_perform :: proc(h: rawptr) -> CURLcode ---
 
     ws_recv :: proc(h, buf: rawptr, buf_len: c.size_t, nread: ^c.size_t, metap: ^^ws_frame) -> CURLcode ---
+    ws_send :: proc(h, buf: rawptr, buf_len: c.size_t, sent: ^c.size_t, frag_size: c.int64_t, flags: c.uint) -> CURLcode ---
 
     slist_append :: proc(list: rawptr, str: cstring) -> ^slist ---
     slist_free_all :: proc(list: rawptr) ---
