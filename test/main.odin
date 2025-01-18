@@ -4,6 +4,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
 import "core:strings"
+import sys"core:sys/windows"
 import "core:thread"
 import "core:time"
 
@@ -61,26 +62,6 @@ when TRACK_MEM {
         fmt.printfln("[%v] -> %v", k, v);
     }
 
-    /*
-    if err := fb.init(); err != .None {
-        fmt.printfln("[Grebball++] Could not allocated resources for football requests: %v", err);
-    }
-    defer fb.free();
-
-    matches := fb.fetch_week(2024, 2, 18);
-    defer fb.delete_matches(matches);
-
-    buff := make([]u8, 32);
-    for m in matches {
-        date_part := time.to_string_yyyy_mm_dd(m.start_time, buff[:]);
-        time_str := time.time_to_string_hms(m.start_time, buff[len(date_part):]);
-        fmt.printfln("[%v](%v %v) %v: %v VS. %v :%v", m.id, date_part, time_str,
-            m.away_team, m.away_score,
-            m.home_score, m.home_team
-        );
-    }
-    */
-
     discord_gateway();
 }
 
@@ -116,40 +97,37 @@ discord_gateway :: proc() {
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
     curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
 
-    code := curl.easy_perform(h);
-    gate_res: gateway_res;
-    _ = json.unmarshal(sb.buf[:], &gate_res, json.DEFAULT_SPECIFICATION, context.temp_allocator);
-    fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
-    fmt.printfln("    url: %v", gate_res.url);
+    //code := curl.easy_perform(h);
+    //gate_res: gateway_res;
+    //_ = json.unmarshal(sb.buf[:], &gate_res, json.DEFAULT_SPECIFICATION, context.temp_allocator);
+    //fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
+    //fmt.printfln("    url: %v", gate_res.url);
 
-    strings.builder_reset(&sb);
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, gate_res.url);
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &sb);
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
-    curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
+    //strings.builder_reset(&sb);
+    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_URL, gate_res.url);
+    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEDATA, &sb);
+    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_WRITEFUNCTION, curl.builder_write);
+    //curl.easy_setopt(h, curl.CURLoption.CURLOPT_HTTPHEADER, headers);
 
     //code = curl.easy_perform(h);
-    fmt.printfln("[Grebball++] [CODE=%v] web socket:", code);
-    fmt.printfln("    %v", strings.to_string(sb));
+    //fmt.printfln("[Grebball++] [CODE=%v] web socket:", code);
+    //fmt.printfln("    %v", strings.to_string(sb));
 
     //TODO: Start heartbeat timer, using time.accurate_sleep
-    //time.accurate_sleep(heartbeat interval)
+    //sys.Sleep(heartbeat interval)
     //will probably need a mutex set on the CURL handle?
-    //1. get messages from bot, 2. send heartbeats, 3. send commands responses
-    //figure out why threads don't seems to work??
+    //1. get messages from bot / gen responses, 2. send heartbeats
 
-    hb_proc :: proc() { 
-        for (true) {
-            fmt.println("[HB] -> need to send new HB command");
-            time.sleep(500);
+    th := thread.create_and_start(proc() {
+        for i in 0..<10 {
+            fmt.printfln("[THREAD] Hello!");
+            sys.Sleep(100);
         }
-    }
-    hb_thread := thread.create_and_start(hb_proc);
-    thread.start(hb_thread);
-    defer thread.destroy(hb_thread);
+    });
+    defer thread.destroy(th);
 
-    thread.join(hb_thread);
-    time.sleep(3000);
+    sys.Sleep(50);
+    thread.join(th);
 
     free_all(context.temp_allocator);
 }
