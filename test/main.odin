@@ -128,14 +128,20 @@ web_socket :: proc() {
     fmt.println("[Grebball++] ready to recv");
 
     buf_len :: 256;
-    buffer: [buf_len]u8;
+    buffer: [buf_len]byte;
     nread: c.size_t = 0;
     meta: ^curl.ws_frame;
     code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nread, &meta);
+
+    hello: hello_evt;
+    _ = json.unmarshal(buffer[:], &hello, json.DEFAULT_SPECIFICATION, context.temp_allocator);
+    defer free_all(context.temp_allocator);
     fmt.printfln("[Grebball++] [code=%v] recv", code);
     fmt.printfln("    meta: %v", meta^);
-    fmt.printfln("    buf (%v): %c", len(buffer), buffer);
+    fmt.printfln("    Hello event: %v", hello);
 
-    size := size_of(curl.ws_frame);
-    fmt.printfln("[Grebball++] sizeof ws_frame = %v", size);
+    sent: c.size_t = 0;
+    close_buf: [0]byte;
+    code = curl.ws_send(ez, &buffer, 0, &sent, 0, cast(u32)curl.WS_Flags.CURLWS_CLOSE);
+    fmt.printfln("[Grebball++] [code=%v] send - close", code);
 }
