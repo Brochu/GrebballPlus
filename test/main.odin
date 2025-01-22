@@ -124,6 +124,8 @@ web_socket :: proc() {
     defer curl.easy_cleanup(ez);
     curl.easy_setopt(ez, curl.CURLoption.CURLOPT_URL, "wss://gateway.discord.gg");
     curl.easy_setopt(ez, curl.CURLoption.CURLOPT_CONNECT_ONLY, 2);
+    //TODO: Look into using callbacks instead of CONNECT_ONLY
+    // How would we handle heartbeat in this case?
 
     code := curl.easy_perform(ez);
     fmt.printfln("[Grebball++] [code=%v]", code);

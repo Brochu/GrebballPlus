@@ -197,6 +197,8 @@ foreign curl {
     easy_perform :: proc(h: HANDLE) -> CURLcode ---
     easy_strerror :: proc(code: CURLcode) -> cstring ---
 
+    //TODO: Maybe add function for the multi API to wait for data?
+
     ws_recv :: proc(
         h: HANDLE,
         buf: rawptr, buf_len: c.size_t,
