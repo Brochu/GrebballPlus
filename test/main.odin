@@ -117,6 +117,9 @@ discord_gateway :: proc() {
 }
 
 web_socket :: proc() {
+    curl.global_init(curl.GLOBAL_ALL);
+    defer curl.global_cleanup();
+
     ez := curl.easy_init();
     defer curl.easy_cleanup(ez);
     curl.easy_setopt(ez, curl.CURLoption.CURLOPT_URL, "wss://gateway.discord.gg");

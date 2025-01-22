@@ -170,6 +170,8 @@ WS_Flags :: enum {
     CURLWS_OFFSET     = (1<<5),
 }
 
+GLOBAL_ALL: c.long = (1 << 0) | (1 << 1);
+
 slist :: struct {
     data: cstring,
     next: ^void,
@@ -186,6 +188,9 @@ ws_frame :: struct {
 @(link_prefix = "curl_")
 foreign curl {
     version :: proc() -> cstring ---
+    global_init :: proc(flags: c.long) ---
+    global_cleanup :: proc() ---
+
     easy_init :: proc() -> HANDLE ---
     easy_cleanup :: proc(h: HANDLE) ---
     easy_setopt :: proc(h: HANDLE, opt: CURLoption, #c_vararg args:..any) ---
