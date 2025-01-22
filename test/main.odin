@@ -120,6 +120,9 @@ web_socket :: proc() {
     curl.global_init(curl.GLOBAL_ALL);
     defer curl.global_cleanup();
 
+    evt_proc :: proc(data: [^]byte, size, len: u64, curl: curl.HANDLE ) {
+    };
+
     ez := curl.easy_init();
     defer curl.easy_cleanup(ez);
     curl.easy_setopt(ez, curl.CURLoption.CURLOPT_URL, "wss://gateway.discord.gg");
@@ -145,6 +148,23 @@ web_socket :: proc() {
     fmt.printfln("    meta: %v", meta^);
     fmt.printfln("    Hello event: %v", hello);
 
+    th := thread.create_and_start_with_data(&hello, proc(hellop: rawptr) {
+        hello: hello_evt = (cast(^hello_evt)hellop)^;
+        hb_interval := hello.d.heartbeat_interval;
+        fmt.println("[Grebball++] Hello from thread, got this data:");
+        fmt.printfln("    HB Interval: %v", hb_interval);
+        sys.Sleep(1000);
+        fmt.println("[Grebball++] HB thread done");
+        //TODO: Handle heartbeat here
+    });
+    defer thread.destroy(th);
+
+    sys.Sleep(2000);
+    //TODO: loop with recv
+    // with CURLcode == AGAIN, wait then try again
+    // with valid message, process command [and maybe reply]
+    // disconnect, quit loop
+    // after disconnect, check if reconnect logic is needed
     sent: c.size_t = 0;
     close_buf: [0]byte;
     code = curl.ws_send(ez, &buffer, 0, &sent, 0, cast(u32)curl.WS_Flags.CURLWS_CLOSE);
