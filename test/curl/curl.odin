@@ -5,9 +5,7 @@ import "core:fmt"
 import "core:strings"
 foreign import curl "libcurl.lib"
 
-builder_write :: proc(contents: rawptr, size, len: u64, user_ptr: rawptr) -> u64 {
-    dst := (cast(^strings.Builder)user_ptr);
-    data := (cast([^]byte)contents);
+builder_write :: proc(data: [^]byte, size, len: u64, dst: ^strings.Builder) -> u64 {
     strings.write_bytes(dst, data[0:len]);
 
     //TODO: find a way to get websocket data on main thread?
