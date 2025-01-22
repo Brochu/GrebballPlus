@@ -111,7 +111,7 @@ discord_gateway :: proc() {
     code := curl.easy_perform(h);
     gate_res: gateway_res;
     _ = json.unmarshal(sb.buf[:], &gate_res, json.DEFAULT_SPECIFICATION, context.temp_allocator);
-    fmt.printfln("[Grebball++] [CODE=%v] gateway response:", code);
+    fmt.printfln("[Grebball++] [CODE=%v; '%v'] gateway response:", code, curl.easy_strerror(code));
     fmt.printfln("    url: %v", gate_res.url);
     free_all(context.temp_allocator);
 }

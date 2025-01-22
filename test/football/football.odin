@@ -48,7 +48,7 @@ URL_BASE :: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboa
 url_str: strings.Builder;
 response: strings.Builder;
 
-curl_h: rawptr;
+curl_h: curl.HANDLE;
 
 init :: proc(allocator: mem.Allocator = context.allocator) -> mem.Allocator_Error {
     curl_h = curl.easy_init();
