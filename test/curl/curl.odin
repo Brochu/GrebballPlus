@@ -161,7 +161,7 @@ CURLoption :: enum {
 };
 
 /* flag bits */
-WS_Flags :: enum {
+WS_Flags :: enum u32 {
     CURLWS_TEXT       = (1<<0),
     CURLWS_BINARY     = (1<<1),
     CURLWS_CONT       = (1<<2),

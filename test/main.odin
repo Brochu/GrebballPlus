@@ -19,13 +19,13 @@ gateway_res :: struct {
     url: string,
     session_start_limit: session_start,
     shards: int,
-}
+};
 session_start :: struct {
     max_concurrency: int,
     remaining: int,
     reset_after: int,
     total: int,
-}
+};
 
 hello_evt :: struct {
     op: int,
@@ -38,7 +38,12 @@ heartbeat_d :: struct {
 heartbeat_req :: struct {
     op: int,
     d: int,
-}
+};
+
+hb_thread_data :: struct {
+    ez: curl.HANDLE,
+    interval: u32,
+};
 
 main :: proc() {
 when TRACK_MEM {
@@ -148,12 +153,24 @@ web_socket :: proc() {
     fmt.printfln("    meta: %v", meta^);
     fmt.printfln("    Hello event: %v", hello);
 
-    th := thread.create_and_start_with_data(&hello, proc(hellop: rawptr) {
-        hello: hello_evt = (cast(^hello_evt)hellop)^;
-        hb_interval := hello.d.heartbeat_interval;
+    data := hb_thread_data{ ez = ez, interval = cast(u32)hello.d.heartbeat_interval };
+    th := thread.create_and_start_with_data(&data, proc(datap: rawptr) {
+        data: hb_thread_data = (cast(^hb_thread_data)datap)^;
+
+        hb_str: strings.Builder;
+        strings.builder_init_len_cap(&hb_str, 0, 256);
+
+        //for {
+            strings.builder_reset(&hb_str);
+            fmt.sbprint(&hb_str, "{\"op\": 1, \"d\": null}");
+        //    sent: c.size_t = 0;
+        //    curl.ws_send(data.ez, &hb_str.buf, len(hb_str.buf), &sent, 256, cast(u32)curl.WS_Flags.CURLWS_TEXT);
+        //}
         fmt.println("[Grebball++] Hello from thread, got this data:");
-        fmt.printfln("    HB Interval: %v", hb_interval);
+        fmt.printfln("    HB Interval: %v", data.interval);
+        fmt.println("[Grebball++] example message: %v", strings.to_string(hb_str));
         sys.Sleep(1000);
+        //sys.Sleep(data.interval);
         fmt.println("[Grebball++] HB thread done");
         //TODO: Handle heartbeat here
     });
