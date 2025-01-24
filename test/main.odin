@@ -156,27 +156,29 @@ web_socket :: proc() {
     data := hb_thread_data{ ez = ez, interval = cast(u32)hello.d.heartbeat_interval };
     th := thread.create_and_start_with_data(&data, proc(datap: rawptr) {
         data: hb_thread_data = (cast(^hb_thread_data)datap)^;
+        fmt.println("[Grebball++] Hello from thread, got this data:");
+        fmt.printfln("    HB Interval: %v", data.interval);
 
         hb_str: strings.Builder;
         strings.builder_init_len_cap(&hb_str, 0, 256);
-
-        //for {
+        for {
             strings.builder_reset(&hb_str);
             fmt.sbprint(&hb_str, "{\"op\": 1, \"d\": null}");
-        //    sent: c.size_t = 0;
-        //    curl.ws_send(data.ez, &hb_str.buf, len(hb_str.buf), &sent, 256, cast(u32)curl.WS_Flags.CURLWS_TEXT);
-        //}
-        fmt.println("[Grebball++] Hello from thread, got this data:");
-        fmt.printfln("    HB Interval: %v", data.interval);
-        fmt.println("[Grebball++] example message: %v", strings.to_string(hb_str));
-        sys.Sleep(1000);
-        //sys.Sleep(data.interval);
-        fmt.println("[Grebball++] HB thread done");
-        //TODO: Handle heartbeat here
-    });
-    defer thread.destroy(th);
+            fmt.println("[Grebball++] example message: %v", strings.to_string(hb_str));
 
-    sys.Sleep(2000);
+            //sent: c.size_t = 0;
+            //curl.ws_send(data.ez, &hb_str.buf, len(hb_str.buf), &sent, 256, cast(u32)curl.WS_Flags.CURLWS_TEXT);
+
+            sys.Sleep(1000);
+            //sys.Sleep(data.interval);
+        }
+    });
+    defer {
+        thread.terminate(th, 0);
+        thread.destroy(th);
+    }
+
+    sys.Sleep(3000);
     //TODO: loop with recv
     // with CURLcode == AGAIN, wait then try again
     // with valid message, process command [and maybe reply]
