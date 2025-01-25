@@ -122,6 +122,17 @@ discord_gateway :: proc() {
 }
 
 web_socket :: proc() {
+    start := time.tick_now();
+    interval: i64 = (1000 * 1000 * 1000);
+    target := start._nsec + interval;
+    for true {
+        now := time.tick_now();
+        if now._nsec >= target {
+            fmt.println("[Grebball++] beat now!...");
+            target = now._nsec + interval;
+        }
+    }
+
     curl.global_init(curl.GLOBAL_ALL);
     defer curl.global_cleanup();
 
@@ -153,32 +164,6 @@ web_socket :: proc() {
     fmt.printfln("    meta: %v", meta^);
     fmt.printfln("    Hello event: %v", hello);
 
-    data := hb_thread_data{ ez = ez, interval = cast(u32)hello.d.heartbeat_interval };
-    th := thread.create_and_start_with_data(&data, proc(datap: rawptr) {
-        data: hb_thread_data = (cast(^hb_thread_data)datap)^;
-        fmt.println("[Grebball++] Hello from thread, got this data:");
-        fmt.printfln("    HB Interval: %v", data.interval);
-
-        hb_str: strings.Builder;
-        strings.builder_init_len_cap(&hb_str, 0, 256);
-        for {
-            strings.builder_reset(&hb_str);
-            fmt.sbprint(&hb_str, "{\"op\": 1, \"d\": null}");
-            fmt.println("[Grebball++] example message: %v", strings.to_string(hb_str));
-
-            //sent: c.size_t = 0;
-            //curl.ws_send(data.ez, &hb_str.buf, len(hb_str.buf), &sent, 256, cast(u32)curl.WS_Flags.CURLWS_TEXT);
-
-            sys.Sleep(1000);
-            //sys.Sleep(data.interval);
-        }
-    });
-    defer {
-        thread.terminate(th, 0);
-        thread.destroy(th);
-    }
-
-    sys.Sleep(3000);
     //TODO: loop with recv
     // with CURLcode == AGAIN, wait then try again
     // with valid message, process command [and maybe reply]
