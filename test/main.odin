@@ -122,17 +122,6 @@ discord_gateway :: proc() {
 }
 
 web_socket :: proc() {
-    start := time.tick_now();
-    interval: i64 = (1000 * 1000 * 1000);
-    target := start._nsec + interval;
-    for true {
-        now := time.tick_now();
-        if now._nsec >= target {
-            fmt.println("[Grebball++] beat now!...");
-            target = now._nsec + interval;
-        }
-    }
-
     curl.global_init(curl.GLOBAL_ALL);
     defer curl.global_cleanup();
 
@@ -164,6 +153,21 @@ web_socket :: proc() {
     fmt.printfln("    meta: %v", meta^);
     fmt.printfln("    Hello event: %v", hello);
 
+    start := time.tick_now();
+    interval: i64 = (2000 * 1000 * 1000);
+    target := start._nsec + interval;
+    hb_count := 0;
+    for hb_count < 5 {
+        now := time.tick_now();
+        if now._nsec >= target {
+            fmt.println("[Grebball++] send heartbeat");
+            target = now._nsec + interval;
+            hb_count += 1;
+            // send heartbeat
+        }
+
+        //code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nread, &meta);
+    }
     //TODO: loop with recv
     // with CURLcode == AGAIN, wait then try again
     // with valid message, process command [and maybe reply]
