@@ -5,6 +5,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:math"
 import "core:mem"
+import "core:slice"
 import "core:strings"
 import sys"core:sys/windows"
 import "core:time"
@@ -125,74 +126,66 @@ web_socket :: proc() {
     curl.global_init(curl.GLOBAL_ALL);
     defer curl.global_cleanup();
 
-    evt_proc :: proc(data: [^]byte, size, len: u64, curl: curl.HANDLE ) {
-    };
-
     ez := curl.easy_init();
     defer curl.easy_cleanup(ez);
     curl.easy_setopt(ez, curl.CURLoption.CURLOPT_URL, "wss://gateway.discord.gg");
     curl.easy_setopt(ez, curl.CURLoption.CURLOPT_CONNECT_ONLY, 2);
-    //TODO: Look into using callbacks instead of CONNECT_ONLY
-    // How would we handle heartbeat in this case?
 
     code := curl.easy_perform(ez);
-    fmt.printfln("[Grebball++] [code=%v]", code);
     sys.Sleep(100);
-    fmt.println("[Grebball++] ready to recv");
+    fmt.printfln("[Grebball++] [code=%v ; %v] WS connected!", code, curl.easy_strerror(code));
 
     buf_len :: 256;
     buffer: [buf_len]byte;
-    nread: c.size_t = 0;
+    nbytes: c.size_t = 0;
     meta: ^curl.ws_frame;
-    code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nread, &meta);
+    code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nbytes, &meta);
+    fmt.printfln("[Grebball++] [code=%v ; %v] Read hello message?", code, curl.easy_strerror(code));
+    fmt.printfln("    meta: %v", meta^);
+    fmt.printfln("    buffer: %v", string(buffer[:]));
 
     hello: hello_evt;
     _ = json.unmarshal(buffer[:], &hello, json.DEFAULT_SPECIFICATION, context.temp_allocator);
     defer free_all(context.temp_allocator);
-    fmt.printfln("[Grebball++] [code=%v] recv", code);
-    fmt.printfln("    meta: %v", meta^);
-    fmt.printfln("    Heartbeat interval: %v", hello.d.heartbeat_interval);
 
-    interval: f64 = cast(f64)(hello.d.heartbeat_interval - 15);
+    send_heartbeat(ez);
+    sys.Sleep(250);
+
+    slice.fill(buffer[:], 0);
+    code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nbytes, &meta);
+    fmt.printfln("[Grebball++] [code=%v ; %v] Read hello message?", code, curl.easy_strerror(code));
+    fmt.printfln("    meta: %v", meta^);
+    fmt.printfln("    buffer: %v", string(buffer[:]));
+
+    /*
+    //interval: f64 = cast(f64)(hello.d.heartbeat_interval - 15);
+    interval: f64 = cast(f64)(2000 - 15);
     last_hb := time.tick_now();
     wait: f64 = 1000;
     hb_count := 0;
-    hb_str: strings.Builder;
-    strings.builder_init_len_cap(&hb_str, 0, 256);
-    defer strings.builder_destroy(&hb_str);
-    for hb_count < 2 {
+    for hb_count < 3 {
         dur :=time.tick_since(last_hb);
         ms := time.duration_milliseconds(dur);
         if ms >= interval {
-            fmt.printfln("[Grebball++] send heartbeat (ms = %v)", ms);
             last_hb = time.tick_now();
             hb_count += 1;
-
-            strings.builder_reset(&hb_str);
-            fmt.sbprint(&hb_str, "{ \"op\": 0, \"d\": null}");
-            sent: c.size_t = 0;
-            code = curl.ws_send(ez, &hb_str.buf, len(hb_str.buf), &sent, 256, cast(u32)curl.WS_Flags.CURLWS_TEXT);
-            msg := curl.easy_strerror(code);
-            fmt.printfln("[Grebball++] send heartbeat (code = %v (%v) ; send = %v)", code, msg, sent);
-
-            sys.Sleep(cast(u32)wait);
-            continue;
+            fmt.printfln("[Grebball++] Sending HB at ms = %v", ms);
         }
 
-        code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nread, &meta);
-        fmt.printfln("[Grebball++] code: %v ; %v", code, curl.easy_strerror(code));
-        if code == .OK {
-            fmt.printfln("[Grebball++] Got data from ws");
-            fmt.printfln("    data: %c", buffer);
-        }
-        else if code == .AGAIN {
-            fmt.printfln("[Grebball++] No data available, check again later ...");
-        }
-        sys.Sleep(cast(u32)math.max(0, math.min(wait, interval - ms)));
+        fmt.printfln("[Grebball++] Checking if we have data available");
+        sys.Sleep(cast(u32)wait);
     }
+    */
 
-    sent: c.size_t = 0;
-    close_buf: [0]byte;
-    code = curl.ws_send(ez, &buffer, 0, &sent, 0, cast(u32)curl.WS_Flags.CURLWS_CLOSE);
-    fmt.printfln("[Grebball++] [code=%v] send - close", code);
+    slice.fill(buffer[:], 0);
+    code = curl.ws_send(ez, &buffer, 0, &nbytes, 0, cast(u32)curl.WS_Flags.CURLWS_CLOSE);
+    fmt.printfln("[Grebball++] [code=%v ; %v] WS disconnected!", code, curl.easy_strerror(code));
+}
+
+send_heartbeat :: proc(ez: curl.HANDLE) {
+    msg: cstring = "{\"op\": 1, \"d\": null}";
+    msg_len: c.size_t = 24;
+    nbytes: c.size_t = 0;
+
+    curl.ws_send(ez, &msg, msg_len, &nbytes, 256, cast(u32)curl.WS_Flags.CURLWS_BINARY);
 }
