@@ -37,13 +37,8 @@ heartbeat_d :: struct {
 };
 
 heartbeat_req :: struct {
-    op: int,
-    d: int,
-};
-
-hb_thread_data :: struct {
-    ez: curl.HANDLE,
-    interval: u32,
+    op: c.size_t,
+    d: any,
 };
 
 main :: proc() {
@@ -183,9 +178,18 @@ web_socket :: proc() {
 }
 
 send_heartbeat :: proc(ez: curl.HANDLE) {
-    msg: cstring = "{\"op\": 1, \"d\": null}";
-    msg_len: c.size_t = 24;
+    //TODO: Find out why Discord has issues decoding heartbeat message
+    // WS communication seems okay? since it's having issues with the payload
+    msg: string = "{\"op\": 1, \"d\": 'null'}";
     nbytes: c.size_t = 0;
+    req: heartbeat_req;
+    req.d = "null";
+    _ = json.unmarshal(transmute([]u8)msg, &req, json.DEFAULT_SPECIFICATION, context.temp_allocator);
+    test, _ := json.marshal(req, {}, context.temp_allocator);
+    fmt.printfln("string: %v", msg);
+    fmt.printfln("unmarshalled obj: %v", req);
+    fmt.printfln("marshalled: %c", test);
 
-    curl.ws_send(ez, &msg, msg_len, &nbytes, 256, cast(u32)curl.WS_Flags.CURLWS_BINARY);
+    curl.ws_send(ez, &test, len(test), &nbytes, 256, cast(u32)curl.WS_Flags.CURLWS_BINARY);
+    fmt.printfln("nbytes: %v", nbytes);
 }
