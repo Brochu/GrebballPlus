@@ -143,34 +143,31 @@ web_socket :: proc() {
     _ = json.unmarshal(buffer[:], &hello, json.DEFAULT_SPECIFICATION, context.temp_allocator);
     defer free_all(context.temp_allocator);
 
-    send_heartbeat(ez);
-    sys.Sleep(250);
-
-    slice.fill(buffer[:], 0);
-    code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nbytes, &meta);
-    fmt.printfln("[Grebball++] [code=%v ; %v] Read hello message?", code, curl.easy_strerror(code));
-    fmt.printfln("    meta: %v", meta^);
-    fmt.printfln("    buffer: %v", string(buffer[:]));
-
-    /*
     //interval: f64 = cast(f64)(hello.d.heartbeat_interval - 15);
     interval: f64 = cast(f64)(2000 - 15);
     last_hb := time.tick_now();
     wait: f64 = 1000;
     hb_count := 0;
-    for hb_count < 3 {
+    for hb_count < 5 {
         dur :=time.tick_since(last_hb);
         ms := time.duration_milliseconds(dur);
         if ms >= interval {
             last_hb = time.tick_now();
             hb_count += 1;
-            fmt.printfln("[Grebball++] Sending HB at ms = %v", ms);
+            send_heartbeat(ez);
         }
 
-        fmt.printfln("[Grebball++] Checking if we have data available");
+        slice.fill(buffer[:], 0);
+        code = curl.ws_recv(ez, &buffer, c.size_t(buf_len), &nbytes, &meta);
+        if code == .OK {
+            fmt.printfln("[Grebball++] [code=%v ; %v] Got new messsage", code, curl.easy_strerror(code));
+            fmt.printfln("    meta: %v", meta^);
+            fmt.printfln("    buffer: %v", string(buffer[:]));
+        } else if code == .AGAIN {
+            fmt.printfln("[Grebball++] [code=%v ; %v] No messages ready", code, curl.easy_strerror(code));
+        }
         sys.Sleep(cast(u32)wait);
     }
-    */
 
     slice.fill(buffer[:], 0);
     code = curl.ws_send(ez, &buffer, 0, &nbytes, 0, cast(u32)curl.WS_Flags.CURLWS_CLOSE);
@@ -180,6 +177,7 @@ web_socket :: proc() {
 send_heartbeat :: proc(ez: curl.HANDLE) {
     msg: string = "{\"op\":1,\"d\":null}";
     nbytes: c.size_t = 0;
+    fmt.printfln("msg: %v", msg);
 
     curl.ws_send(ez, raw_data(msg), len(msg), &nbytes, 256, cast(u32)curl.WS_Flags.CURLWS_TEXT);
     fmt.printfln("nbytes: %v", nbytes);
