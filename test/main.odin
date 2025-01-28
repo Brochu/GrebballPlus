@@ -33,7 +33,7 @@ hello_evt :: struct {
     d: heartbeat_d,
 };
 heartbeat_d :: struct {
-    heartbeat_interval: int,
+    heartbeat_interval: u32,
 };
 
 heartbeat_req :: struct {
@@ -143,18 +143,19 @@ web_socket :: proc() {
     _ = json.unmarshal(buffer[:], &hello, json.DEFAULT_SPECIFICATION, context.temp_allocator);
     defer free_all(context.temp_allocator);
 
-    //interval: f64 = cast(f64)(hello.d.heartbeat_interval - 15);
-    interval: f64 = cast(f64)(2000 - 15);
+    interval: u32 = hello.d.heartbeat_interval - 15;
     last_hb := time.tick_now();
-    wait: f64 = 1000;
+    wait: u32 = 3000;
     hb_count := 0;
     for hb_count < 5 {
         dur :=time.tick_since(last_hb);
-        ms := time.duration_milliseconds(dur);
+        ms := cast(u32)time.duration_milliseconds(dur);
         if ms >= interval {
             last_hb = time.tick_now();
             hb_count += 1;
             send_heartbeat(ez);
+            sys.Sleep(wait);
+            continue;
         }
 
         slice.fill(buffer[:], 0);
@@ -166,7 +167,10 @@ web_socket :: proc() {
         } else if code == .AGAIN {
             fmt.printfln("[Grebball++] [code=%v ; %v] No messages ready", code, curl.easy_strerror(code));
         }
-        sys.Sleep(cast(u32)wait);
+
+        w := math.min(wait, interval - ms);
+        fmt.printfln("[Grebball++] wait for %v", w);
+        sys.Sleep(math.min(wait, w));
     }
 
     slice.fill(buffer[:], 0);
